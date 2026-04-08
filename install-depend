@@ -1,7 +1,7 @@
 #!/bin/bash
 
 sudo apt update
-sudo apt install libnotify-dev libglib2.0-dev mediainfo
-
-mkdir ~/.config/player-cpp
-touch ~/.config/player-cpp/dirs.txt
+sudo apt install libnotify-dev libglib2.0-dev libsndfile1
+libsndfile1-dev libportaudio2 portaudio19-dev
+# mkdir ~/.config/player-cpp
+# touch ~/.config/player-cpp/dirs.txt
