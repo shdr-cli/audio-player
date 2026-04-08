@@ -9,6 +9,20 @@
 # audio-player
 ### Консольный аудиоплеер на C++ с использованием PortAudio и libsndfile. Работает в фоне, поддерживает случайное воспроизведение, зацикливание и системные уведомления через libnotify.
 
+---
+
+## Содержание
+
+- [Возможности](#возможности)
+- [📦 Зависимости](#-зависимости)
+- [Установка на Debian/Ubuntu](#установка-на-debianubuntu)
+- [🚜 Сборка](#-сборка)
+- [Использование](#использование)
+- [📂 Структура проекта](#-структура-проекта)
+- [🔧 Конфигурация](#-конфигурация)
+
+---
+
 # Возможности
 
 | Функция | Описание |
@@ -38,7 +52,7 @@ apt install libnotify-dev libglib2.0-dev libsndfile1 libsndfile1-dev libportaudi
 
 # 🚜 Сборка
 ```console
-https://github.com/shdr-cli/audio-player.git
+git clone https://github.com/shdr-cli/audio-player.git
 cd audio-player
 cmake -B build
 cmake --build build
@@ -71,7 +85,7 @@ cmake --build build
 ```
 ### Подробно смотрите --help
 
-# Структура проекта
+# 📂 Структура проекта
 
 ```
 audio-player
