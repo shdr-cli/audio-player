@@ -37,7 +37,7 @@ int AudioCallback(const void* inputBuffer, void* outputBuffer,
                         return paComplete;
                     }
                     // Показываем уведомление о смене трека
-                    player->ShowNotification("Следующий трек", "Воспроизведение следующего трека");
+                    // player->ShowNotification("Следующий трек", "Воспроизведение следующего трека");
                 } else {
                     sf_seek(player->audioFile, 0, SEEK_SET);
                 }
@@ -46,7 +46,7 @@ int AudioCallback(const void* inputBuffer, void* outputBuffer,
                      i < totalFramesNeeded * player->sfInfo.channels; i++) {
                     out[i] = 0.0f;
                 }
-                player->ShowNotification("Воспроизведение завершено", "Конец трека");
+                // player->ShowNotification("Воспроизведение завершено", "Конец трека");
                 return paComplete;
             }
         }

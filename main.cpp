@@ -143,6 +143,7 @@ void HelpUsage() {
     
     std::cout << "Команды:\n";
     print::command("play <файл>", "Воспроизвести указанный WAV-файл", 19);
+    print::command("list",   "Показать список аудио файлов");
     print::command("stop",        "Остановить воспроизведение");
     print::command("add <путь>",         "Добавить директорию", 19);
     print::command("remove <путь>",      "Удалить директорию", 19);
@@ -150,13 +151,12 @@ void HelpUsage() {
     print::command("status",      "Статус плеера");
     
     std::cout << "\nОпции:\n";
-    print::option("-l, --list",   "Показать список файлов в ~/Music");
-    print::option("-r, --random", "Случайное воспроизведение из ~/Music");
-    print::option("-L, --loop",   "Зациклить воспроизведение");
+    print::option("-r, -random", "Случайное воспроизведение из ~/Music");
+    print::option("-l, -loop",   "Зациклить воспроизведение");
     
     std::cout << "\nПримеры:\n";
     std::cout << "    ./player play song.wav\n";
-    std::cout << "    ./player --random --loop\n";
+    std::cout << "    ./player -random -loop\n";
     std::cout << "    ./player stop\n\n";
 }
 
@@ -207,7 +207,7 @@ void infoArg() {
     std::stringstream buffer;
     buffer << file.rdbuf();
     std::string filePath = buffer.str();
-    filePath.pop_back();
+    // filePath.pop_back();
     file.close();
     std::cout << GREEN << "Играет "  << RESET << BLUE2 << filePath << RESET << std::endl;
 }
@@ -287,16 +287,16 @@ int main(int argc, char* argv[]) {
 
     for (int i = 1; i < argc; i++) {
         std::string arg = std::string(argv[i]);
-        if (arg == "-loop" || arg == "-L") {
+        if (arg == "-loop" || arg == "-l") {
             loop = true;
-        } else if (arg == "--random" || arg == "-r") {
+        } else if (arg == "-random" || arg == "-r") {
             random = true;
         }
     }
 
     if (loop) std::cout << BLUE << "  [+] Зацикливание включено" << RESET << std::endl;
 
-    if ((command == "--list" || command == "-l") && argc == 2) { listArg(); }
+    if ((command == "list") && argc == 2) { listArg(); }
     
     else if ((command == "--random" || command == "-r") && (argc == 2 || argc == 3)) { randomArg(loop, random); }
     

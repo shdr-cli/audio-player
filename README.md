@@ -77,13 +77,13 @@ cmake --build build
 ./player remove ~/Music
 
 # Случайный трек (трек берётся из ~/.config/player-cpp/dirs.txt)
-./player --random
+./player -random
 
 # Случайные треки с зацикливанием (каждый следующий трек случайный)
-./player --random -loop
+./player -random -loop
 
 # Показать список всех аудио
-./player --list
+./player list
 
 # Остановить воспроизведение
 ./player stop
