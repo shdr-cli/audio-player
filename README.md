@@ -113,6 +113,7 @@ audio-player
 ├── install-depend
 ├── m4a-mp3.sh
 ├── main.cpp
+├── player-cpp
 └── run
 ```
 
@@ -123,6 +124,3 @@ audio-player
 |PID_FILE|/tmp/cpp_player.pid|Файл с PID фонового скрипта|
 |File_FileInfoTxt|/home/shdr/shdrScripts/player_info.txt|Файл с путём текущего трека|
 |audioNames|.mp3, .wav, .flac, .ogg|Поддерживаемые форматы|
-
-# Бонус
-В папке convert есть 3 скрипта для конвертации формата аудио из flac, m4a, wav в mp3
