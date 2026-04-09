@@ -19,7 +19,6 @@
 - [🚜 Сборка](#-сборка)
 - [Использование](#использование)
 - [📂 Структура проекта](#-структура-проекта)
-- [📂 Структура проекта](#-структура-проекта)
 - [🔧 Конфигурация](#-конфигурация)
 - [Бонус](#бонус)
 
@@ -32,9 +31,11 @@
 |Воспроизведение | WAV, MP3, FLAC, OGG (через libsndfile)|
 |Фон| Плеер уходит в фон, не блокируя терминал|
 |Зацикливание| -loop / -L - бесконечное повторение|
-|Случайный трек	| --random / -r - играть случайное из ~/Music|
+|Случайный трек	| --random / -r - случайный трек из ~/.config/player-cpp/dirs.txt (содержит пути к директориям с аудио)|
 |Уведомления | Через libnotify (начало, конец, смена трека)|
-|Плейлист | Автоматически собирает все аудио из папки Music|
+|Плейлист | Автоматически собирает все аудио из файла dirs.txt (в конфиге player-cpp)|
+|Добавление папки с аудио|Путь с аудио добавляется в файл dirs.txt|
+|Удаление папки с аудио|Путь с аудио удаляется из файла dirs.txt|
 |Управление | stop, info, status|
 |Цветной вывод | Информативные сообщения в терминале|
 
@@ -47,13 +48,13 @@
 |glib2|Для libnotify|
 
 # Установка на Debian/Ubuntu
-```console
+```bash
 apt update && \
 apt install libnotify-dev libglib2.0-dev libsndfile1 libsndfile1-dev libportaudio2 portaudio19-dev
 ```
 
 # 🚜 Сборка
-```console
+```bash
 git clone https://github.com/shdr-cli/audio-player.git
 cd audio-player
 cmake -B build
@@ -62,20 +63,26 @@ cmake --build build
 
 # Использование
 ## Основные команды
-```console
+```bash
 # Воспроизвести файл
 ./player play /path/to/song.wav
 
 # Воспроизвести с зацикливанием
 ./player play /path/to/song.wav -loop
 
-# Случайный трек (трек берётся из ~/Music)
+# Добавление директории
+./player add ~/Music
+
+# Удаление директории
+./player remove ~/Music
+
+# Случайный трек (трек берётся из ~/.config/player-cpp/dirs.txt)
 ./player --random
 
 # Случайные треки с зацикливанием (каждый следующий трек случайный)
 ./player --random -loop
 
-# Показать список всех аудио в ~/Music
+# Показать список всех аудио
 ./player --list
 
 # Остановить воспроизведение
@@ -122,10 +129,12 @@ audio-player
 # 🔧 Конфигурация
 |Переменная|Значение по умалчанию|Описание|
 |:---|:---|:---:|
-|folderPath|/home/shdr/Music|Папка с музыкой|
+|folderPath|~/.config/player-cpp/dirs.txt|Файл с путями директорий аудио|
 |PID_FILE|/tmp/cpp_player.pid|Файл с PID фонового скрипта|
 |File_FileInfoTxt|/home/shdr/shdrScripts/player_info.txt|Файл с путём текущего трека|
 |audioNames|.mp3, .wav, .flac, .ogg|Поддерживаемые форматы|
+
+## Уведомления пока работаю некорректно
 
 # Бонус
 в папке convert есть скрипты для конвертации аудио из m4a, flac, wav в mp3
