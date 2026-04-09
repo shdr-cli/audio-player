@@ -4,6 +4,19 @@
 Консольный аудиоплеер с демонизацией (фон) и уведомлениями
 ```
 
+![License](https://img.shields.io/badge/license-GPL--3.0-blue?style=flat-square)
+![Platform](https://img.shields.io/badge/platform-Linux-1793D1?style=flat-square&logo=linux)
+![Status](https://img.shields.io/badge/status-active-brightgreen?style=flat-square)
+
+![GitHub stars](https://img.shields.io/github/stars/shdr-cli/audio-player?style=social)
+![GitHub forks](https://img.shields.io/github/forks/shdr-cli/audio-player?style=social)
+![GitHub watchers](https://img.shields.io/github/watchers/shdr-cli/audio-player?style=social)
+![GitHub repo size](https://img.shields.io/github/repo-size/shdr-cli/audio-player?style=flat-square&color=brightgreen)
+![GitHub last commit](https://img.shields.io/github/last-commit/shdr-cli/audio-player?style=flat-square&color=brightgreen)
+
+![Debian](https://img.shields.io/badge/Debian-A81D33?style=flat-square&logo=debian&logoColor=white)
+![Ubuntu](https://img.shields.io/badge/Ubuntu-E95420?style=flat-square&logo=ubuntu&logoColor=white)
+
 </div>
 
 # audio-player
@@ -50,7 +63,9 @@
 # Установка на Debian/Ubuntu
 ```bash
 apt update && \
-apt install libnotify-dev libglib2.0-dev libsndfile1 libsndfile1-dev libportaudio2 portaudio19-dev
+apt install libnotify-dev libglib2.0-dev \
+    libsndfile1 libsndfile1-dev \
+    libportaudio2 portaudio19-dev
 ```
 
 # 🚜 Сборка
@@ -138,3 +153,16 @@ audio-player
 
 # Бонус
 в папке convert есть скрипты для конвертации аудио из m4a, flac, wav в mp3
+
+---
+
+<div align="center">
+
+# Если проект понравился — поставь ⭐
+### Это мотивирует продолжать разработку
+
+![GitHub issues](https://img.shields.io/github/issues/shdr-cli/audio-player?style=flat-square&color=red)
+![GitHub pull requests](https://img.shields.io/github/issues-pr/shdr-cli/audio-player?style=flat-square&color=blue)
+![GitHub contributors](https://img.shields.io/github/contributors/shdr-cli/audio-player?style=flat-square)
+
+</div>
