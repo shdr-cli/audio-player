@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <algorithm>
 #include "globals.h"
+#include <iomanip>
 
 std::vector<std::string> audioFiles;
 
@@ -25,14 +26,40 @@ void daemonize() {
 }
 
 void SetAudioFiles(std::vector<std::string>& audioFiles_) {
-    if (std::filesystem::exists(folderPath) && std::filesystem::is_directory(folderPath)) {
-        for (const auto& file : std::filesystem::directory_iterator(folderPath)) {
-            if (std::filesystem::is_regular_file(file)) {
-                std::string ext = file.path().extension().string();
-                std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-                
-                if (std::find(audioNames.begin(), audioNames.end(), ext) != audioNames.end()) {
-                    audioFiles.push_back(file.path().string());
+    std::filesystem::path fPath = folderPath;
+    if (folderPath[0] == '~') {
+        const char* homeDir = getenv("HOME");
+        if (homeDir) {
+            fPath = std::filesystem::path(homeDir) / folderPath.substr(2); // удаление ~/
+        }
+    }
+    
+    if (!std::filesystem::exists(fPath)) {
+        std::cout << "Путь '" << fPath << "' не найден" << std::endl;
+        return;
+    }
+    
+    std::vector<std::string> paths;
+    std::ifstream inFile(fPath);
+    std::string line;
+    
+    while (std::getline(inFile, line)) {
+        if (!line.empty()) {
+            paths.push_back(line);
+        }
+    }
+    inFile.close();
+
+    for (const auto& path : paths) {
+        if (std::filesystem::exists(path) && std::filesystem::is_directory(path)) {
+            for (const auto& file : std::filesystem::directory_iterator(path)) {
+                if (std::filesystem::is_regular_file(file)) {
+                    std::string ext = file.path().extension().string();
+                    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+                    
+                    if (std::find(audioNames.begin(), audioNames.end(), ext) != audioNames.end()) {
+                        audioFiles_.push_back(file.path().string());
+                    }
                 }
             }
         }
@@ -98,15 +125,156 @@ void Kill(short show_status = 0) {
 }
 
 void HelpUsage() {
-    std::cout << "Использование: ./player " << GREEN << "play" << RESET << " " << YELLOW << "<файл.wav>" << RESET << " | " << GREEN << "stop" << RESET <<" |" << std::endl <<
-    "  Другие аргументы:" << std::endl <<
-    "    \t" << GREEN << "info" << RESET << " | " << GREEN << "status" << RESET << " : Вывод текущего аудио" << std::endl <<
-    std::endl <<
-    "    " << GREEN << "--list" << RESET << " (" << GREEN << "-l" << RESET << ") : Показывает список аудио файлов в папке ~/Music" << std::endl <<
-    "    " << GREEN << "--random" << RESET << " (" << GREEN << "-r" << RESET << ") : Воспроизводит случайный аудио из папки ~/Music" << std::endl <<
-    std::endl << 
-    "    " << GREEN << "-loop" << RESET << " (" << GREEN << "-L" << RESET << ") : Зацикливает воспроизведение" << std::endl;
+    struct print {
+        static void command(const char* name, const char* desc, const short width = 15) {
+            std::cout << "    " << GREEN << std::left << std::setw(width) << name << RESET << desc << "\n";
+        }
+        
+        static void option(const char* flags, const char* desc, const short width = 15) {
+            std::cout << "    " << GREEN << std::left << std::setw(width) << flags << RESET << desc << "\n";
+        }
+    };
+    
+    std::cout << "\nИспользование:\n";
+    std::cout << "    ./player " << GREEN << "play" << RESET << " " << YELLOW << "<файл.wav>" << RESET 
+              << " | " << GREEN << "stop" << RESET 
+              << " | " << GREEN << "info" << RESET 
+              << " | " << GREEN << "status" << RESET << "\n\n";
+    
+    std::cout << "Команды:\n";
+    print::command("play <файл>", "Воспроизвести указанный WAV-файл", 19);
+    print::command("stop",        "Остановить воспроизведение");
+    print::command("add <путь>",         "Добавить директорию", 19);
+    print::command("remove <путь>",      "Удалить директорию", 19);
+    print::command("info",        "Информация о текущем треке");
+    print::command("status",      "Статус плеера");
+    
+    std::cout << "\nОпции:\n";
+    print::option("-l, --list",   "Показать список файлов в ~/Music");
+    print::option("-r, --random", "Случайное воспроизведение из ~/Music");
+    print::option("-L, --loop",   "Зациклить воспроизведение");
+    
+    std::cout << "\nПримеры:\n";
+    std::cout << "    ./player play song.wav\n";
+    std::cout << "    ./player --random --loop\n";
+    std::cout << "    ./player stop\n\n";
 }
+
+void listArg() {
+    try {
+        SetAudioFiles(audioFiles);
+    } catch (const std::filesystem::filesystem_error& error) {
+        std::cerr << RED << "Ошибка: " << error.what() << RESET << std::endl;
+    }
+
+    std::filesystem::path fPath = folderPath;
+    if (folderPath[0] == '~') {
+        const char* homeDir = getenv("HOME");
+        if (homeDir) {
+            fPath = std::filesystem::path(homeDir) / folderPath.substr(2); // удаление ~/
+        }
+    }
+
+    std::ifstream file(fPath);
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    std::cout << "\t\t" << YELLOW << "Плейлисты:" << RESET << std::endl <<
+        buffer.str() << std::endl;
+
+    std::cout << YELLOW << "\t\tВсего: " << audioFiles.size() <<  RESET << std::endl;
+    for (const auto& file : audioFiles) {
+        std::cout << file << std::endl;
+    }
+}
+
+void randomArg(bool loop, bool random) {
+    try {
+        SetAudioFiles(audioFiles);
+    } catch (const std::filesystem::filesystem_error& error) {
+        std::cerr << RED << "Ошибка: " << error.what() << RESET << std::endl;
+    }
+
+    Kill(1);
+    PlayerPlay(audioFiles, loop, random);
+}
+
+void infoArg() {
+    std::ifstream file(File_FileInfoTxt);
+    if (!file.is_open()) {
+        std::cout << RED << "Ничего не играет" << RESET << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    std::string filePath = buffer.str();
+    filePath.pop_back();
+    file.close();
+    std::cout << GREEN << "Играет "  << RESET << BLUE2 << filePath << RESET << std::endl;
+}
+
+void addArg(const std::string& path) {
+    std::filesystem::path configDir;
+    const char* homeDir = getenv("HOME");
+    if (homeDir) {
+        configDir = std::filesystem::path(homeDir) / ".config" / "player-cpp";
+    }
+    
+    std::filesystem::path configFile = configDir / "dirs.txt";
+    
+    if (!std::filesystem::exists(path)) {
+        std::cout << "Путь '" << path << "' не найден" << std::endl;
+        return;
+    }
+    
+    if (!std::filesystem::is_directory(path)) {
+        std::cout << "Путь '" << path << "' не является директорией" << std::endl;
+        return;
+    }
+
+    std::error_code ec;
+    std::filesystem::create_directories(configDir, ec);
+    
+    std::ofstream file(configFile, std::ios::app);
+    if (file.is_open()) {
+        file << path << "\n";
+        std::cout << "Путь '" << path << "' добавлен" << std::endl;
+    } else {
+        std::cerr << "Ошибка: не удалось открыть " << configFile << std::endl;
+        exit(EXIT_FAILURE);
+    }
+}
+
+void removeArg(const std::string& path) {
+    std::filesystem::path configDir;
+    const char* homeDir = getenv("HOME");
+    if (homeDir) {
+        configDir = std::filesystem::path(homeDir) / ".config" / "player-cpp";
+    }
+    
+    std::filesystem::path configFile = configDir / "dirs.txt";
+    
+    if (!std::filesystem::exists(configFile)) {
+        std::cout << "Путь '" << path << "' не найден" << std::endl;
+        return;
+    }
+    
+    std::vector<std::string> paths;
+    std::ifstream inFile(configFile);
+    std::string line;
+    
+    while (std::getline(inFile, line)) {
+        if (line != path) paths.push_back(line);
+    }
+    inFile.close();
+    
+    std::ofstream outFile(configFile);
+    for (const auto& path : paths) {
+        outFile << path << "\n";
+    }
+    
+    std::cout << "Путь '" << path << "' удалён" << std::endl;
+}
+
 int main(int argc, char* argv[]) {
     bool loop, random = false;
     
@@ -118,7 +286,6 @@ int main(int argc, char* argv[]) {
     std::string command = argv[1];
 
     for (int i = 1; i < argc; i++) {
-        // std::cout << i << " " << argv[i] << std::endl;
         std::string arg = std::string(argv[i]);
         if (arg == "-loop" || arg == "-L") {
             loop = true;
@@ -129,47 +296,33 @@ int main(int argc, char* argv[]) {
 
     if (loop) std::cout << BLUE << "  [+] Зацикливание включено" << RESET << std::endl;
 
-    if ((command == "--list" || command == "-l") && argc == 2) {
-        try {
-            SetAudioFiles(audioFiles);
-        } catch (const std::filesystem::filesystem_error& error) {
-            std::cerr << RED << "Ошибка: " << error.what() << RESET << std::endl;
-        }
-
-        std::cout << YELLOW << "\t\tВсего:" << audioFiles.size() <<  RESET << std::endl;
-        for (const auto& file : audioFiles) {
-            std::cout << file << std::endl;
-        }
-    } else if ((command == "--random" || command == "-r") && (argc == 2 || argc == 3)) {
-        try {
-            SetAudioFiles(audioFiles);
-        } catch (const std::filesystem::filesystem_error& error) {
-            std::cerr << RED << "Ошибка: " << error.what() << RESET << std::endl;
-        }
-
-        Kill(1);
-        PlayerPlay(audioFiles, loop, random);
-        
-    } else if ((command == "play" && (argc == 3 || argc == 4))) {
+    if ((command == "--list" || command == "-l") && argc == 2) { listArg(); }
+    
+    else if ((command == "--random" || command == "-r") && (argc == 2 || argc == 3)) { randomArg(loop, random); }
+    
+    else if ((command == "play" && (argc == 3 || argc == 4))) {
         std::string filePath = argv[2];
         Kill(1);
         PlayerPlay(filePath, loop);
-    } 
+    }
+
     else if (command == "stop" && argc == 2) {
         Kill();
-    } else if ((command == "info" || command == "status") && argc == 2) {
-        std::ifstream file(File_FileInfoTxt);
-        if (!file.is_open()) {
-            std::cout << RED << "Ничего не играет" << RESET << std::endl;
-            exit(EXIT_FAILURE);
-        }
-        std::stringstream buffer;
-        buffer << file.rdbuf();
-        std::string filePath = buffer.str();
-        filePath.pop_back();
-        file.close();
-        std::cout << GREEN << "Играет "  << RESET << BLUE2 << filePath << RESET << std::endl;
-    } else {
+    }
+    
+    else if ((command == "info" || command == "status") && argc == 2) { infoArg(); }
+
+    else if (command == "add" && argc == 3) {
+        std::string path = argv[2];
+        addArg(path);
+    }
+    
+    else if (command == "remove" && argc == 3) {
+        std::string path = argv[2];
+        removeArg(path);
+    }
+
+    else {
         HelpUsage();
         return 1;
     }

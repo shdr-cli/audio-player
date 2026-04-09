@@ -2,7 +2,6 @@
 #include <unistd.h>
 #include <csignal>
 #include <fstream>
-// #include <sstream>
 #include <random>
 #include <libnotify/notify.h>
 #include "globals.h"
