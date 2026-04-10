@@ -5,6 +5,7 @@ const std::string File_FileInfoTxt = "/home/shdr/shdrScripts/player_info.txt";
 const std::string folderPath = "~/.config/player-cpp/dirs.txt";
 // const std::string folderPath = "/home/shdr/.config/player-cpp/dirs.txt";
 const std::vector<std::string> audioNames = { ".mp3", ".wav", ".flac", ".ogg" };
+AudioPlayer* player_ = nullptr;
 
 char RESET[] = "\033[0m";
 char RED[] = "\033[31m";

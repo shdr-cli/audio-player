@@ -13,7 +13,7 @@ typedef struct _NotifyNotification NotifyNotification;
 class AudioPlayer {
 private:
     std::string GetRandom(std::vector<std::string>& audioFiles);
-
+    
 public:
     bool loop;
     bool random;
@@ -27,14 +27,19 @@ public:
     bool Start();
     bool OpenNextRandomFile();
 
-    void InitNotifications();
-    void ShowNotification(const std::string& title, const std::string& message);
+    void ShowNotification(const std::string& desc);
     void CleanupNotifications();
     
+    bool ToTime(double seconds);
+    bool ToPercentPosition(short percent);
+    double GetCurrentTime();
+    double GetTotalTime(); 
+
     NotifyNotification* notification;
     SNDFILE* audioFile;
     PaStream* audioStream;
     SF_INFO sfInfo;
+    double currentPosition;
 };
 
 #endif

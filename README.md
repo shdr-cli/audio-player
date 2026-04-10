@@ -34,6 +34,7 @@
 - [📂 Структура проекта](#-структура-проекта)
 - [🔧 Конфигурация](#-конфигурация)
 - [Бонус](#бонус)
+- [Roadmap](#roadmap)
 
 ---
 
@@ -85,6 +86,9 @@ cmake --build build
 # Воспроизвести с зацикливанием
 ./player play /path/to/song.wav -loop
 
+# Перемотать аудио на 70%
+./player at 70
+
 # Добавление директории
 ./player add ~/Music
 
@@ -112,17 +116,13 @@ cmake --build build
 # 📂 Структура проекта
 
 ```
-audio-player
 ├── CMakeLists.txt
 ├── LICENSE
 ├── README.md
-├── cpp-player.cpp
-├── cpp-player.h
-├── demo
-│   ├── YEUZ – LOW.mp3
-│   └── YEUZ – RAW.mp3
-├── globals.cpp
-├── globals.h
+├── convert
+│   ├── flac-mp3.sh
+│   ├── m4a-mp3.sh
+│   └── wav-mp3.sh
 ├── include
 │   ├── pa_asio.h
 │   ├── pa_jack.h
@@ -135,10 +135,17 @@ audio-player
 │   ├── pa_win_wmme.h
 │   └── portaudio.h
 ├── install-depend
-├── m4a-mp3.sh
-├── main.cpp
-├── player-cpp
-└── run
+├── run
+└── src
+    ├── args.cpp
+    ├── args.h
+    ├── cpp-player.cpp
+    ├── cpp-player.h
+    ├── globals.cpp
+    ├── globals.h
+    ├── main.cpp
+    ├── signals.cpp
+    └── signals.h
 ```
 
 # 🔧 Конфигурация
@@ -149,10 +156,26 @@ audio-player
 |File_FileInfoTxt|/home/shdr/shdrScripts/player_info.txt|Файл с путём текущего трека|
 |audioNames|.mp3, .wav, .flac, .ogg|Поддерживаемые форматы|
 
-## Уведомления пока работаю некорректно
+## Уведомления приходят пока для аргумента random
 
 # Бонус
 в папке convert есть скрипты для конвертации аудио из m4a, flac, wav в mp3
+
+# Roadmap
+
+### ✅ v0.1.0 - Базовая функциональность
+
+- [x] Воспроизведение аудиофайлов (`WAV`, `MP3`, `FLAC`, `OGG`)
+- [x] Работа в фоне
+- [x] Управление через CLI (`play`, `stop`, `info`)
+- [x] Зацикливание (`-loop`)
+- [x] Случайное воспроизведение (`-random`)
+- [x] Системные уведомления (libnotify)
+- [x] Цветной вывод в терминале
+- [ ] Пауза / Возобновление (`player pause`)
+- [ ] Следующий трек / Предыдущий трек (`player next`, `player orev`)
+- [x] Перемотка (в процентах) (`player at`)
+- [ ] Отображение прогресс бара
 
 ---
 

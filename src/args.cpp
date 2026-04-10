@@ -1,29 +1,6 @@
-#include <iostream>
-#include <string>
-#include <csignal>
-#include <fstream>
-#include <sstream>
-#include <unistd.h>
-#include <sys/stat.h>   
-#include "cpp-player.h"
-#include <filesystem>
-#include <algorithm>
-#include "globals.h"
-#include <iomanip>
+#include "args.h"
 
 std::vector<std::string> audioFiles;
-
-void daemonize() {
-    pid_t pid = fork();
-    if (pid < 0) exit(EXIT_FAILURE);
-    if (pid > 0) exit(EXIT_SUCCESS);
-
-    if (setsid() < 0) exit(EXIT_FAILURE);
-
-    close(STDIN_FILENO);
-    close(STDOUT_FILENO);
-    close(STDERR_FILENO);
-}
 
 void SetAudioFiles(std::vector<std::string>& audioFiles_) {
     std::filesystem::path fPath = folderPath;
@@ -66,6 +43,21 @@ void SetAudioFiles(std::vector<std::string>& audioFiles_) {
     }
 }
 
+std::string NormalDuration(double allseconds) {
+    int minutes = static_cast<int>(allseconds) / 60;
+    int seconds = static_cast<int>(allseconds) % 60;
+    
+    std::string result = std::to_string(minutes) + ":";
+    
+    if (seconds < 10) {
+        result += "0" + std::to_string(seconds);
+    } else {
+        result += std::to_string(seconds);
+    }
+    
+    return result;
+}
+
 void PlayerPlay(std::string& filePath, bool loop) {
     SF_INFO checkInfo;
     SNDFILE* checkFile = sf_open(filePath.c_str(), SFM_READ, &checkInfo);
@@ -79,7 +71,10 @@ void PlayerPlay(std::string& filePath, bool loop) {
 
     daemonize(); 
 
+    signal(SIGUSR1, signalHandler);
+
     AudioPlayer player(filePath, loop);
+    player_ = &player;
     if (player.Init() && player.Start()) {
         std::ofstream file(PID_FILE);
         file << getpid();
@@ -89,13 +84,18 @@ void PlayerPlay(std::string& filePath, bool loop) {
             usleep(500000); 
         }
     }
+    player_ = nullptr;
     unlink(PID_FILE.c_str());
 }
+
 void PlayerPlay(std::vector<std::string>& audioFiles, bool loop, bool random) {
-    std::cout << GREEN << "Воспроизведение" << RESET << std::endl;
+    // std::cout << GREEN << "Воспроизведение" << RESET << std::endl;
     daemonize(); 
 
+    signal(SIGUSR1, signalHandler);
+
     AudioPlayer player(audioFiles, loop, random);
+    player_ = &player;
     if (player.Init() && player.Start()) {
         std::ofstream file(PID_FILE);
         file << getpid();
@@ -105,53 +105,40 @@ void PlayerPlay(std::vector<std::string>& audioFiles, bool loop, bool random) {
             usleep(500000); 
         }
     }
+    player_ = nullptr;
     unlink(PID_FILE.c_str());
-}
-
-void Kill(short show_status = 0) {
-    std::remove(File_FileInfoTxt.c_str());
-    std::ifstream file(PID_FILE);
-    if (file.is_open()) {
-        pid_t pid;
-        file >> pid;
-        file.close();
-        
-        kill(pid, SIGTERM);
-        unlink(PID_FILE.c_str());
-        std::cout << RED << "Воспроизведение остановлено (PID " << RESET << pid << RED << ")" << RESET << std::endl;
-    } else {
-        if (show_status == 0) std::cout << "Нет активного плеера" << std::endl;
-    }
 }
 
 void HelpUsage() {
     struct print {
-        static void command(const char* name, const char* desc, const short width = 15) {
+        static void command(const char* name, const char* desc, const short width = 30) {
             std::cout << "    " << GREEN << std::left << std::setw(width) << name << RESET << desc << "\n";
         }
         
-        static void option(const char* flags, const char* desc, const short width = 15) {
+        static void option(const char* flags, const char* desc, const short width = 30) {
             std::cout << "    " << GREEN << std::left << std::setw(width) << flags << RESET << desc << "\n";
         }
     };
     
-    std::cout << "\nИспользование:\n";
+    std::cout << "Использование:\n";
     std::cout << "    ./player " << GREEN << "play" << RESET << " " << YELLOW << "<файл.wav>" << RESET 
               << " | " << GREEN << "stop" << RESET 
               << " | " << GREEN << "info" << RESET 
               << " | " << GREEN << "status" << RESET << "\n\n";
     
     std::cout << "Команды:\n";
-    print::command("play <файл>", "Воспроизвести указанный WAV-файл", 19);
+    print::command("play <файл>", "Воспроизвести указанный WAV-файл", 34);
     print::command("list",   "Показать список аудио файлов");
     print::command("stop",        "Остановить воспроизведение");
-    print::command("add <путь>",         "Добавить директорию", 19);
-    print::command("remove <путь>",      "Удалить директорию", 19);
+    print::command("add <путь>",         "Добавить директорию", 34);
+    print::command("remove <путь>",      "Удалить директорию", 34);
+    print::command("at <значение от 0-100>",      "Перемотка аудио (в процентах)", 40);
     print::command("info",        "Информация о текущем треке");
     print::command("status",      "Статус плеера");
     
     std::cout << "\nОпции:\n";
-    print::option("-r, -random", "Случайное воспроизведение из ~/Music");
+    print::option("list -s", "Список найденных аудио");
+    print::option("-r, -random", "Случайное воспроизведение");
     print::option("-l, -loop",   "Зациклить воспроизведение");
     
     std::cout << "\nПримеры:\n";
@@ -160,7 +147,7 @@ void HelpUsage() {
     std::cout << "    ./player stop\n\n";
 }
 
-void listArg() {
+void listArg(bool all) {
     try {
         SetAudioFiles(audioFiles);
     } catch (const std::filesystem::filesystem_error& error) {
@@ -179,11 +166,13 @@ void listArg() {
     std::stringstream buffer;
     buffer << file.rdbuf();
     std::cout << "\t\t" << YELLOW << "Плейлисты:" << RESET << std::endl <<
-        buffer.str() << std::endl;
+        buffer.str();
 
-    std::cout << YELLOW << "\t\tВсего: " << audioFiles.size() <<  RESET << std::endl;
-    for (const auto& file : audioFiles) {
-        std::cout << file << std::endl;
+    if (all) {
+        std::cout << YELLOW << "\n\t\tВсего: " << audioFiles.size() <<  RESET << std::endl;
+        for (const auto& file : audioFiles) {
+            std::cout << file << std::endl;
+        }
     }
 }
 
@@ -207,6 +196,9 @@ void infoArg() {
     std::stringstream buffer;
     buffer << file.rdbuf();
     std::string filePath = buffer.str();
+
+    // Отправка сиганала для получения информации о длительности аудио
+    setSignal(static_cast<int>(SignalType::TOTAL_TIME));
     // filePath.pop_back();
     file.close();
     std::cout << GREEN << "Играет "  << RESET << BLUE2 << filePath << RESET << std::endl;
@@ -275,56 +267,35 @@ void removeArg(const std::string& path) {
     std::cout << "Путь '" << path << "' удалён" << std::endl;
 }
 
-int main(int argc, char* argv[]) {
-    bool loop, random = false;
+void ToTime(char* argv[]) {
+    std::ifstream pidFile(PID_FILE);
+    if (!pidFile.is_open()) {
+        std::cout << RED << "Нет активного плеера" << RESET << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    pid_t pid;
+    pidFile >> pid;
+    pidFile.close();
+
+    short time = atoi(argv[2]);
+
+    if (time < 0 || time > 100) {
+        std::cout << RED << "Перемотать аудио можно от 0% до 100%" << RESET << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    std::ofstream seekFile("/tmp/player_time.tmp");
+    seekFile << time;
+    seekFile.close();
     
-    if (argc < 2) {
-        HelpUsage();
-        return 1;
-    }
+    setSignal(static_cast<int>(SignalType::PEREMOTKA), std::to_string(time));
 
-    std::string command = argv[1];
+    std::cout << GREEN << "Перемотка на " << time << "%" << RESET << std::endl;
 
-    for (int i = 1; i < argc; i++) {
-        std::string arg = std::string(argv[i]);
-        if (arg == "-loop" || arg == "-l") {
-            loop = true;
-        } else if (arg == "-random" || arg == "-r") {
-            random = true;
-        }
-    }
-
-    if (loop) std::cout << BLUE << "  [+] Зацикливание включено" << RESET << std::endl;
-
-    if ((command == "list") && argc == 2) { listArg(); }
-    
-    else if ((command == "--random" || command == "-r") && (argc == 2 || argc == 3)) { randomArg(loop, random); }
-    
-    else if ((command == "play" && (argc == 3 || argc == 4))) {
-        std::string filePath = argv[2];
-        Kill(1);
-        PlayerPlay(filePath, loop);
-    }
-
-    else if (command == "stop" && argc == 2) {
-        Kill();
-    }
-    
-    else if ((command == "info" || command == "status") && argc == 2) { infoArg(); }
-
-    else if (command == "add" && argc == 3) {
-        std::string path = argv[2];
-        addArg(path);
-    }
-    
-    else if (command == "remove" && argc == 3) {
-        std::string path = argv[2];
-        removeArg(path);
-    }
-
-    else {
-        HelpUsage();
-        return 1;
-    }
-    return 0;
+    // if (kill(pid, SIGUSR1) == 0) {
+    //     std::cout << GREEN << "Перемотка на " << time << "%" << RESET << std::endl;
+    // } else {
+    //     std::cout << RED << "Ошибка" << RESET << std::endl;
+    // }
 }

@@ -15,6 +15,8 @@ int AudioCallback(const void* inputBuffer, void* outputBuffer,
     AudioPlayer* player = (AudioPlayer*)userData;
     float* out = (float*)outputBuffer;
     
+    player->currentPosition = double(timeInfo->outputBufferDacTime);
+    
     unsigned long totalFramesNeeded = framesPerBuffer;
     unsigned long framesWritten = 0;
     
@@ -60,8 +62,11 @@ AudioPlayer::AudioPlayer(const std::string& filePath, bool loop)
       audioStream(nullptr), notification(nullptr) {
     
     audioFiles.push_back(filePath);
-    
+
+    // Новая версия фона, закрывает вывод, потом открывает
+    freopen("/dev/null","w",stderr);
     if (Pa_Initialize() != paNoError) return;
+    freopen("/dev/tty","w",stderr);
 
     audioFile = sf_open(filePath.c_str(), SFM_READ, &sfInfo);
     if (!audioFile) return;
@@ -79,17 +84,17 @@ AudioPlayer::AudioPlayer(const std::string& filePath, bool loop)
 
     Pa_OpenStream(&audioStream, nullptr, &output, sfInfo.samplerate,
                   1024*4, paClipOff, AudioCallback, this);
-    
-    InitNotifications();
 }
 
-// Конструктор с плейлистом
 AudioPlayer::AudioPlayer(std::vector<std::string>& audioFiles,
         bool loop, bool random) : 
         loop(loop), random(random), audioFiles(audioFiles),
         audioFile(nullptr), audioStream(nullptr), notification(nullptr) {
 
+    // Новая версия фона, закрывает вывод, потом открывает
+    freopen("/dev/null","w",stderr);
     if (Pa_Initialize() != paNoError) return;
+    freopen("/dev/tty","w",stderr);
 
     std::string filePath = GetRandom(audioFiles);
     
@@ -104,20 +109,7 @@ AudioPlayer::AudioPlayer(std::vector<std::string>& audioFiles,
     output.hostApiSpecificStreamInfo = nullptr;
 
     Pa_OpenStream(&audioStream, nullptr, &output, sfInfo.samplerate,
-                  1024*4, paClipOff, AudioCallback, this);
-    
-    InitNotifications();
-}
-
-AudioPlayer::~AudioPlayer() {
-    CleanupNotifications();
-    
-    if (audioStream) {
-        Pa_StopStream(audioStream);
-        Pa_CloseStream(audioStream);
-    }
-    if (audioFile) sf_close(audioFile);
-    Pa_Terminate();
+                  1024*4, paClipOff, AudioCallback, this);   
 }
 
 bool AudioPlayer::OpenNextRandomFile() {
@@ -134,21 +126,14 @@ bool AudioPlayer::OpenNextRandomFile() {
     return audioFile != nullptr;
 }
 
-void AudioPlayer::InitNotifications() {
+void AudioPlayer::ShowNotification(const std::string& desc) {
     if (notify_init("Player")) {
         notification = notify_notification_new(
             "Player", 
-            "Плеер инициализирован",
+            desc.c_str(),
             "audio-x-generic"
         );
         notify_notification_set_timeout(notification, 3000);
-        notify_notification_show(notification, nullptr);
-    }
-}
-
-void AudioPlayer::ShowNotification(const std::string& title, const std::string& message) {
-    if (notification) {
-        notify_notification_update(notification, title.c_str(), message.c_str(), "audio-x-generic");
         notify_notification_show(notification, nullptr);
     }
 }
@@ -172,7 +157,44 @@ std::string AudioPlayer::GetRandom(std::vector<std::string>& audioFiles) {
     file << audioFiles[randomIndex];
     file.close();
 
+    ShowNotification(audioFiles[randomIndex]);
+
     return audioFiles[randomIndex];
+}
+
+bool AudioPlayer::ToTime(double seconds) {
+    if (!audioFile) return false;
+
+    sf_count_t frame = sf_count_t(seconds*sfInfo.samplerate);
+    sf_count_t result = sf_seek(audioFile, frame, SEEK_SET);
+
+    if (result == frame) {
+        currentPosition = seconds;
+        return true;
+    }
+    return false;
+}
+
+bool AudioPlayer::ToPercentPosition(short percent) {
+    if (!audioFile) return false;
+
+    double totalTime = GetTotalTime();
+    double targetTime = (percent / 100.0) * totalTime;
+    return ToTime(targetTime);
+}
+
+double AudioPlayer::GetCurrentTime() {
+    if (!audioFile) return 0.0;
+
+    sf_count_t frame = sf_seek(audioFile, 0, SEEK_CUR);
+    return static_cast<double>(frame) / sfInfo.samplerate;
+}
+
+// Возвращает время в секундах
+double AudioPlayer::GetTotalTime() {
+    if (!audioFile) return 0.0;
+    
+    return static_cast<double>(sfInfo.frames / sfInfo.samplerate);
 }
 
 bool AudioPlayer::Init() { 
@@ -181,8 +203,18 @@ bool AudioPlayer::Init() {
 
 bool AudioPlayer::Start() {
     if (audioStream && Pa_StartStream(audioStream) == paNoError) {
-        ShowNotification("Воспроизведение", "Начало воспроизведения");
         return true;
     }
     return false;
+}
+
+AudioPlayer::~AudioPlayer() {
+    CleanupNotifications();
+    
+    if (audioStream) {
+        Pa_StopStream(audioStream);
+        Pa_CloseStream(audioStream);
+    }
+    if (audioFile) sf_close(audioFile);
+    Pa_Terminate();
 }
