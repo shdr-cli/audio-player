@@ -1,9 +1,8 @@
 #include "globals.h"
 
-const std::string PID_FILE = "/tmp/cpp_player.pid";
-const std::string File_FileInfoTxt = "/home/shdr/shdrScripts/player_info.txt";
-const std::string folderPath = "~/.config/player-cpp/dirs.txt";
-// const std::string folderPath = "/home/shdr/.config/player-cpp/dirs.txt";
+const std::string PID_FILE = "/tmp/player_cpp.pid";
+const std::string File_FileInfoTxt = "~/.config/player_cpp/player_info.txt";
+const std::string folderPath = "~/.config/player_cpp/dirs.txt";
 const std::vector<std::string> audioNames = { ".mp3", ".wav", ".flac", ".ogg" };
 AudioPlayer* player_ = nullptr;
 

@@ -151,9 +151,9 @@ cmake --build build
 # 🔧 Конфигурация
 |Переменная|Значение по умалчанию|Описание|
 |:---|:---|:---:|
-|folderPath|~/.config/player-cpp/dirs.txt|Файл с путями директорий аудио|
-|PID_FILE|/tmp/cpp_player.pid|Файл с PID фонового скрипта|
-|File_FileInfoTxt|/home/shdr/shdrScripts/player_info.txt|Файл с путём текущего трека|
+|folderPath|~/.config/player_cpp/dirs.txt|Файл с путями директорий аудио|
+|PID_FILE|/tmp/player_cpp.pid|Файл с PID фонового скрипта|
+|File_FileInfoTxt|~/.config/player_cpp/player_info.txt|Файл с путём текущего трека|
 |audioNames|.mp3, .wav, .flac, .ogg|Поддерживаемые форматы|
 
 ## Уведомления приходят пока для аргумента random
@@ -163,7 +163,7 @@ cmake --build build
 
 # Roadmap
 
-### ✅ v0.1.0 - Базовая функциональность
+### v0.1.0 - Базовая функциональность
 
 - [x] Воспроизведение аудиофайлов (`WAV`, `MP3`, `FLAC`, `OGG`)
 - [x] Работа в фоне
@@ -172,7 +172,7 @@ cmake --build build
 - [x] Случайное воспроизведение (`-random`)
 - [x] Системные уведомления (libnotify)
 - [x] Цветной вывод в терминале
-- [ ] Пауза / Возобновление (`player pause`)
+- [x] Пауза / Возобновление (`player pause/player unpause`)
 - [ ] Следующий трек / Предыдущий трек (`player next`, `player orev`)
 - [x] Перемотка (в процентах) (`player at`)
 - [ ] Отображение прогресс бара

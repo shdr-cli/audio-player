@@ -21,35 +21,37 @@ int AudioCallback(const void* inputBuffer, void* outputBuffer,
     unsigned long framesWritten = 0;
     
     while (framesWritten < totalFramesNeeded) {
-        sf_count_t readCount = sf_readf_float(player->audioFile, 
+        if (!player->isPaused) {
+            sf_count_t readCount = sf_readf_float(player->audioFile, 
             out + (framesWritten * player->sfInfo.channels), 
             totalFramesNeeded - framesWritten);
         
-        framesWritten += readCount;
+            framesWritten += readCount;
 
-        // Если аудио закончилось
-        if (readCount == 0) {
-            if (player->loop) { // Зацикливание
-                if (player->random) { // Случайное воспроизведение аудио
-                    if (!player->OpenNextRandomFile()) {
-                        for (unsigned long i = framesWritten * player->sfInfo.channels; 
-                             i < totalFramesNeeded * player->sfInfo.channels; i++) {
-                            out[i] = 0.0f;
+            // Если аудио закончилось
+            if (readCount == 0) {
+                if (player->loop) { // Зацикливание
+                    if (player->random) { // Случайное воспроизведение аудио
+                        if (!player->OpenNextRandomFile()) {
+                            for (unsigned long i = framesWritten * player->sfInfo.channels; 
+                                i < totalFramesNeeded * player->sfInfo.channels; i++) {
+                                out[i] = 0.0f;
+                            }
+                            return paComplete;
                         }
-                        return paComplete;
+                        // Показываем уведомление о смене трека
+                        // player->ShowNotification("Следующий трек", "Воспроизведение следующего трека");
+                    } else {
+                        sf_seek(player->audioFile, 0, SEEK_SET);
                     }
-                    // Показываем уведомление о смене трека
-                    // player->ShowNotification("Следующий трек", "Воспроизведение следующего трека");
                 } else {
-                    sf_seek(player->audioFile, 0, SEEK_SET);
+                    for (unsigned long i = framesWritten * player->sfInfo.channels; 
+                        i < totalFramesNeeded * player->sfInfo.channels; i++) {
+                        out[i] = 0.0f;
+                    }
+                    // player->ShowNotification("Воспроизведение завершено", "Конец трека");
+                    return paComplete;
                 }
-            } else {
-                for (unsigned long i = framesWritten * player->sfInfo.channels; 
-                     i < totalFramesNeeded * player->sfInfo.channels; i++) {
-                    out[i] = 0.0f;
-                }
-                // player->ShowNotification("Воспроизведение завершено", "Конец трека");
-                return paComplete;
             }
         }
     }   
@@ -71,7 +73,21 @@ AudioPlayer::AudioPlayer(const std::string& filePath, bool loop)
     audioFile = sf_open(filePath.c_str(), SFM_READ, &sfInfo);
     if (!audioFile) return;
 
-    std::ofstream file(File_FileInfoTxt);
+    std::filesystem::path fPath = File_FileInfoTxt;
+    if (File_FileInfoTxt[0] == '~') {
+        const char* homeDir = getenv("HOME");
+        if (homeDir) {
+            fPath = std::filesystem::path(homeDir) / File_FileInfoTxt.substr(2); // удаление ~/
+        }
+    }
+    // std::cout << fPath << std::endl;
+    // std::ifstream file(fPath);
+
+    // std::ofstream file(File_FileInfoTxt);
+    // file << audioFiles[randomIndex];
+    // file.close();
+
+    std::ofstream file(fPath);
     file << filePath;
     file.close();
 
@@ -153,7 +169,21 @@ std::string AudioPlayer::GetRandom(std::vector<std::string>& audioFiles) {
     std::mt19937 gen(randomDevice());
     size_t randomIndex = gen() % audioFiles.size();
 
-    std::ofstream file(File_FileInfoTxt);
+    std::filesystem::path fPath = File_FileInfoTxt;
+    if (File_FileInfoTxt[0] == '~') {
+        const char* homeDir = getenv("HOME");
+        if (homeDir) {
+            fPath = std::filesystem::path(homeDir) / File_FileInfoTxt.substr(2); // удаление ~/
+        }
+    }
+    // std::cout << fPath << std::endl;
+    // std::ifstream file(fPath);
+
+    // std::ofstream file(File_FileInfoTxt);
+    // file << audioFiles[randomIndex];
+    // file.close();
+
+    std::ofstream file(fPath);
     file << audioFiles[randomIndex];
     file.close();
 
@@ -195,6 +225,15 @@ double AudioPlayer::GetTotalTime() {
     if (!audioFile) return 0.0;
     
     return static_cast<double>(sfInfo.frames / sfInfo.samplerate);
+}
+
+std::string AudioPlayer::PauseUnpause(bool change) {
+    if (change) isPaused = !isPaused;
+    if (isPaused) {
+        return "Музыка остановлена";
+    } else {
+        return"Пауза снята";
+    }
 }
 
 bool AudioPlayer::Init() { 

@@ -5,6 +5,7 @@
 #include <string>
 #include <sndfile.h>
 #include <portaudio.h>
+#include <filesystem>
 #include <vector>
 
 struct _NotifyNotification;
@@ -33,13 +34,16 @@ public:
     bool ToTime(double seconds);
     bool ToPercentPosition(short percent);
     double GetCurrentTime();
-    double GetTotalTime(); 
+    double GetTotalTime();
+
+    std::string PauseUnpause(bool change = true);
 
     NotifyNotification* notification;
     SNDFILE* audioFile;
     PaStream* audioStream;
     SF_INFO sfInfo;
     double currentPosition;
+    bool isPaused;
 };
 
 #endif

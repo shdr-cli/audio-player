@@ -14,7 +14,8 @@ extern AudioPlayer* player_;
 
 enum class SignalType : int {
     PEREMOTKA = 1,
-    TOTAL_TIME = 2
+    TOTAL_TIME = 2,
+    PAUSE_UNPAUSE = 3
 };
 
 // Цвета для терминала

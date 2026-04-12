@@ -12,8 +12,9 @@ void SetAudioFiles(std::vector<std::string>& audioFiles_) {
     }
     
     if (!std::filesystem::exists(fPath)) {
-        std::cout << "Путь '" << fPath << "' не найден" << std::endl;
-        return;
+        // std::cout << "Путь '" << fPath << "' не найден" << std::endl;
+        std::cout << "Добавьте хотябы одну папку с аудио (аргумент add)" << std::endl;
+        exit(EXIT_FAILURE);
     }
     
     std::vector<std::string> paths;
@@ -188,7 +189,14 @@ void randomArg(bool loop, bool random) {
 }
 
 void infoArg() {
-    std::ifstream file(File_FileInfoTxt);
+    std::filesystem::path fPath = File_FileInfoTxt;
+    if (File_FileInfoTxt[0] == '~') {
+        const char* homeDir = getenv("HOME");
+        if (homeDir) {
+            fPath = std::filesystem::path(homeDir) / File_FileInfoTxt.substr(2); // удаление ~/
+        }
+    }
+    std::ifstream file(fPath);
     if (!file.is_open()) {
         std::cout << RED << "Ничего не играет" << RESET << std::endl;
         exit(EXIT_FAILURE);
@@ -205,10 +213,11 @@ void infoArg() {
 }
 
 void addArg(const std::string& path) {
+    // const std::string folderPath = "~/.config/player_cpp/dirs.txt";
     std::filesystem::path configDir;
     const char* homeDir = getenv("HOME");
     if (homeDir) {
-        configDir = std::filesystem::path(homeDir) / ".config" / "player-cpp";
+        configDir = std::filesystem::path(homeDir) / ".config" / "player_cpp";
     }
     
     std::filesystem::path configFile = configDir / "dirs.txt";
@@ -284,18 +293,22 @@ void ToTime(char* argv[]) {
         std::cout << RED << "Перемотать аудио можно от 0% до 100%" << RESET << std::endl;
         exit(EXIT_FAILURE);
     }
-
-    std::ofstream seekFile("/tmp/player_time.tmp");
-    seekFile << time;
-    seekFile.close();
     
     setSignal(static_cast<int>(SignalType::PEREMOTKA), std::to_string(time));
 
     std::cout << GREEN << "Перемотка на " << time << "%" << RESET << std::endl;
+}
 
-    // if (kill(pid, SIGUSR1) == 0) {
-    //     std::cout << GREEN << "Перемотка на " << time << "%" << RESET << std::endl;
-    // } else {
-    //     std::cout << RED << "Ошибка" << RESET << std::endl;
-    // }
+void PauseUnpause() {
+    std::ifstream pidFile(PID_FILE);
+    if (!pidFile.is_open()) {
+        std::cout << RED << "Нет активного плеера" << RESET << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    pid_t pid;
+    pidFile >> pid;
+    pidFile.close();
+
+    setSignal(static_cast<int>(SignalType::PAUSE_UNPAUSE), "pause/unpause");
 }

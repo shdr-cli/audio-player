@@ -31,7 +31,8 @@ int main(int argc, char* argv[]) {
         else listArg();
     }
     
-    else if ((command == "--random" || command == "-r") && (argc == 2 || argc == 3)) { randomArg(loop, random); }
+    else if ((command == "--random" || command == "-r")
+            && (argc == 2 || argc == 3)) { randomArg(loop, random); }
     
     else if ((command == "play" && (argc == 3 || argc == 4))) {
         std::string filePath = argv[2];
@@ -41,7 +42,8 @@ int main(int argc, char* argv[]) {
 
     else if (command == "stop" && argc == 2) { Kill(); }
     
-    else if ((command == "info" || command == "status") && argc == 2) { infoArg(); }
+    else if ((command == "info" || command == "status")
+            && argc == 2) { infoArg(); }
 
     else if (command == "add" && argc == 3) {
         std::string path = argv[2];
@@ -57,6 +59,11 @@ int main(int argc, char* argv[]) {
         ToTime(argv);
     }
 
+    else if ((command == "pause" && argc == 2)
+            || (command == "unpause" && argc == 2)) {
+        PauseUnpause();
+    }
+    
     else {
         HelpUsage();
         return 1;

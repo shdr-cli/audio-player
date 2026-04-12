@@ -1,7 +1,15 @@
 #include "signals.h"
 
 void Kill(short show_status) {
-    std::remove(File_FileInfoTxt.c_str());
+    std::filesystem::path fPath = File_FileInfoTxt;
+    if (File_FileInfoTxt[0] == '~') {
+        const char* homeDir = getenv("HOME");
+        if (homeDir) {
+            fPath = std::filesystem::path(homeDir) / File_FileInfoTxt.substr(2); // удаление ~/
+        }
+    }
+
+    std::remove(fPath.c_str());
     std::ifstream file(PID_FILE);
     if (file.is_open()) {
         pid_t pid;
@@ -36,34 +44,36 @@ void signalHandler(int signalNum) {
     std::ifstream sigtype("/tmp/player_sigtype.tmp");
     if (!sigtype.is_open()) return;
 
-    int signalType;
-    sigtype >> signalType;
+    std::string signalType;
+    // sigtype >> signalType;
+    std::string value;
+    int cam;
+    std::getline(sigtype, signalType);
+    std::getline(sigtype, value);
 
-    switch(signalType) {
+    switch(atoi(signalType.c_str())) {
         case static_cast<int>(SignalType::PEREMOTKA): {
-            std::ifstream file("/tmp/player_time.tmp");
-            if (file.is_open()) {
-                short percent;
-                file >> percent;
-                player_->ToPercentPosition(percent);
-                file.close();
-            }
+            player_->ToPercentPosition(static_cast<short>(std::stoi(value)));
             break;
         }
         case static_cast<int>(SignalType::TOTAL_TIME): {
+            std::cout << player_->PauseUnpause(false) << std::endl;
             std::cout << "Длительность: " << NormalDuration(player_->GetCurrentTime()) <<
             "/" << NormalDuration(player_->GetTotalTime()) << std::endl;
             break;
         }
+        case static_cast<int>(SignalType::PAUSE_UNPAUSE): {
+            std::cout << player_->PauseUnpause() << std::endl;
+            break;
+        }
     }
-    std::remove("/tmp/player_time.tmp");
     std::remove("/tmp/player_sigtype.tmp");
 }
 
 void setSignal(int type, std::string value) {
     std::ofstream file("/tmp/player_sigtype.tmp");
     if (file.is_open()) {
-        file << type << " " << value;
+        file << type << std::endl << value;
         file.close();
     }
 

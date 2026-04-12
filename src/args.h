@@ -32,5 +32,7 @@ void addArg(const std::string& path);
 void removeArg(const std::string& path);
 // Перемотка аудио в процентах
 void ToTime(char* argv[]);
+// Пауза и снятие пузы
+void PauseUnpause();
 
 #endif
